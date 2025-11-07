@@ -76,9 +76,9 @@ def generate_launch_description():
         launch_ros.actions.Node(
             package='vrep_ros_teleop', executable='teleop_mux_node', name='teleop_base_mux',
             parameters=[
-                {'~/joystick_button': 4},
+                {'~/joystick_button': 7},
                 {'~/joystick_topic': '/teleop_base/twistCommand'},
-                {'~/auto_button': 5},
+                {'~/auto_button': 9},
                 {'~/auto_topic': '/base_mux/autoCommand'},
                 ],
             remappings=[
@@ -91,7 +91,7 @@ def generate_launch_description():
             parameters=[
                 {'~/joystick_button': 6},
                 {'~/joystick_topic': '/teleop_arm/twistCommand'},
-                {'~/auto_button': 7},
+                {'~/auto_button': 8},
                 {'~/auto_topic': '/arm_mux/autoCommand'},
                 ],
             remappings=[
@@ -130,12 +130,12 @@ def generate_launch_description():
             package='vrep_vsv_driver', executable='teleop_geom', name='teleop_geom',
             parameters=[
                 {'~/axis_arm_x': 2},
-                {'~/axis_arm_y': 4},
+                {'~/axis_arm_y': 6},
                 {'~/axis_arm_z': 3},
                 {'~/arm_velocity': 0.25},
                 {'~/home_button': 1},
                 {'~/ready_button': 0},
-                {'~/move_button': 2},
+                {'~/move_button': 4},
                 ],
             remappings=[
                 ('~/position_command', '/arm_ik/position'),
