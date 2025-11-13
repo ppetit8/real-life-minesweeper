@@ -18,6 +18,6 @@ ros2 run plotjuggler plotjuggler
 
 ros2 run joy joy_node
 
-ros2 launch vrep_vsv_driver vsv_geom_mux.launch.py
+source install/setup.bash && ros2 launch vrep_vsv_driver vsv_geom_mux.launch.py
 
-ros2 launch vrep_vsv_driver vsv_pc_min.launch.py
+source install/setup.bash && ros2 launch vrep_vsv_driver vsv_pc_min.launch.py
