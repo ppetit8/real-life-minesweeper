@@ -9,7 +9,7 @@ cd /cs-share/pradalier/CoppeliaSim
 (open scene at : /cs-share/pradalier/ros2_ws/src/scenes/treasure_search.ttt)
 
 ros2 run rviz2 rviz2
-(topics /vrep/vision/image /vrep/kision/image at least)
+(topics /vrep/vision/image /vrep/kision/image and type TF for axes)
 
 ros2 run plotjuggler plotjuggler
 (select vrep/metalDetector topic)
