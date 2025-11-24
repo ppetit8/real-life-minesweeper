@@ -44,15 +44,14 @@ import launch_ros.descriptions
 def generate_launch_description():
     return LaunchDescription([
         launch_ros.actions.Node(
-            package='shore_follower_drive_base', executable='shore_follower_drive_node', name='shore_follower_drive',
+            package='minesweeper', executable='shore_follower_drive_node', name='shore_follower_drive',
             parameters=[
-                {'~/model_dir': os.path.join(os.getenv("HOME"),"ml4r/ws5_data/output2/models/step_1000.keras")},
+                {'~/model_dir': os.path.join(os.getenv("HOME"),"ml4r/ws6_data/output2/models/step_1000.keras")},
                 {'~/linear_vel': 0.5},
-                {'~/twist_factor': 1.0},
                 ],
             remappings=[
                 ('~/image', '/vrep/kision/image'),
-                ('~/twist', '/vrep/twistCommand'),
+                ('~/twist', '/arm_ik/twist'),
                 ],
             output='screen'),
 

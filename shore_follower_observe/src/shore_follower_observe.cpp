@@ -49,12 +49,10 @@ class ShoreFollowerObserve: public rclcpp::Node {
         std::string base_frame_;
         std::string world_frame_;
         std::string outdir_;
-        double rotation_threshold_;
         double min_displacement_;
-        double min_rotation_;
         int max_image_per_type_;
         unsigned long image_counter_;
-        unsigned long type_counter_[3]; // left, straight, right
+        unsigned long type_counter_[3]; // left, idle, right
         int joystick_button_;
         bool learning_;
 
@@ -112,8 +110,7 @@ class ShoreFollowerObserve: public rclcpp::Node {
 			new_pose.x = transformStamped.transform.translation.x;
 			new_pose.y = transformStamped.transform.translation.y;
 			new_pose.theta = tf2::getYaw(transformStamped.transform.rotation);
-            if ((hypot(last_pose.x-new_pose.x,last_pose.y-new_pose.y)<min_displacement_) &&
-                    (fabs(remainder(last_pose.theta-new_pose.theta,2*M_PI))<min_rotation_)) {
+            if ((hypot(last_pose.x-new_pose.x,last_pose.y-new_pose.y)<min_displacement_)) {
                 return;
             }
 			last_pose = new_pose;
@@ -123,9 +120,9 @@ class ShoreFollowerObserve: public rclcpp::Node {
             cv::Mat img(cv_bridge::toCvShare(img_msg,"bgr8")->image);
             bool save_it = true;
             int label = 1;
-            if (last_command_.angular.z<-rotation_threshold_) {
+            if (last_command_.linear.x<0) {
                 label = 0;
-            } else if (last_command_.angular.z>rotation_threshold_) {
+            } else if (last_command_.linear.x>0) {
                 label = 2;
             }
             save_it = (type_counter_[label] < (unsigned)max_image_per_type_);
@@ -153,17 +150,13 @@ class ShoreFollowerObserve: public rclcpp::Node {
             this->declare_parameter("~/base_frame",std::string("body"));
             this->declare_parameter("~/world_frame",std::string("world"));
             this->declare_parameter("~/out_dir",std::string("."));
-            this->declare_parameter("~/rotation_threshold",0.3);
             this->declare_parameter("~/min_displacement",0.1);
-            this->declare_parameter("~/min_rotation",0.1);
             this->declare_parameter("~/max_image_per_type",1000);
             this->declare_parameter("~/joystick_button",3);
             base_frame_ = this->get_parameter("~/base_frame").as_string();
             world_frame_ = this->get_parameter("~/world_frame").as_string();
             outdir_ = this->get_parameter("~/out_dir").as_string();
-            rotation_threshold_ = this->get_parameter("~/rotation_threshold").as_double();
             min_displacement_ = this->get_parameter("~/min_displacement").as_double();
-            min_rotation_ = this->get_parameter("~/min_rotation").as_double();
             max_image_per_type_ = this->get_parameter("~/max_image_per_type").as_int();
             joystick_button_ = this->get_parameter("~/joystick_button").as_int();
             std::string transport;

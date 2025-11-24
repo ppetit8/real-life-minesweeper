@@ -26,10 +26,8 @@ class ShoreFollowerDrive(Node):
 
         self.declare_parameter('~/model_dir', ".")
         self.declare_parameter('~/linear_vel', 1.0)
-        self.declare_parameter('~/twist_factor', 1.0)
         self.model_dir_ = self.get_parameter('~/model_dir').get_parameter_value().string_value
         self.linear_vel_ = self.get_parameter('~/linear_vel').get_parameter_value().double_value
-        self.twist_factor_ = self.get_parameter('~/twist_factor').get_parameter_value().double_value
 
         self.load_model()
 
@@ -59,14 +57,10 @@ class ShoreFollowerDrive(Node):
         #TODO: Use the network output so the robot can drive around the lake
         # returns a geometry_msgs.Twist
         if res[0] > res[1] and res[0] > res[2]:
-            out.linear.x = self.linear_vel_
-            out.angular.z = -self.twist_factor_
+            out.linear.x = -self.linear_vel_
         elif res[2] > res[1] and res[2] > res[0]:
             out.linear.x = self.linear_vel_
-            out.angular.z = self.twist_factor_
-        else:
-            out.linear.x = self.linear_vel_
-            out.angular.z = 0.0
+        print("Driving with linear.x = %5.2f" % out.linear.x)
         return out
 
 

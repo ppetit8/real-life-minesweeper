@@ -46,19 +46,18 @@ def generate_launch_description():
         launch_ros.actions.Node(
             package='shore_follower_observe', executable='shore_follower_observe', name='shore_follower_observe',
             parameters=[
-                {'~/base_frame': 'bubbleRob'},
+                {'~/base_frame': 'VSV/Kision_sensor'},
                 {'~/world_frame': 'world'},
-                {'~/out_dir': "/home/GTL/fjourda/ml4r/ws5_data"},
-                {'~/rotation_threshold': 0.05},
+                {'~/out_dir': "/home/GTL/fjourda/ml4r/ws6_data"},
                 {'~/min_displacement': 0.01},
                 {'~/min_rotation': 0.1},
                 {'~/max_image_per_type': 1000},
-                {'~/joystick_button': 3},
+                {'~/joystick_button': 11},
                 ],
             remappings=[
                 ('~/joy', '/joy'),
                 ('~/image', '/vrep/kision/image'),
-                ('~/twist', '/vrep/twistCommand'),
+                ('~/twist', '/arm_ik/twist'),
                 ],
             output='screen'),
     ])
