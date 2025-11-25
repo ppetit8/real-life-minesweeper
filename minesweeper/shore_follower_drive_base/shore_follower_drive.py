@@ -10,6 +10,7 @@ from rclpy.node import Node
 from rclpy.time import Time
 
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist
 
 import tensorflow as tf
@@ -34,6 +35,10 @@ class ShoreFollowerDrive(Node):
         self.br = CvBridge()
         self.twist_pub_ = self.create_publisher(Twist,"~/twist",1)
         self.image_sub_ = self.create_subscription(Image,"~/image", self.image_callback, 1)
+        # store last received PointCloud2 for use during decision making
+        self.last_points_msg = None
+        self.points_sub_ = self.create_subscription(PointCloud2, "/points", self.points_callback, 1)
+
 
     def load_model(self):
         # Loads the model
@@ -60,8 +65,39 @@ class ShoreFollowerDrive(Node):
             out.linear.x = -self.linear_vel_
         elif res[2] > res[1] and res[2] > res[0]:
             out.linear.x = self.linear_vel_
-        print("Driving with linear.x = %5.2f" % out.linear.x)
+        
+        # get the last received point cloud (if any) and derive a simple metric
+        # We keep this lightweight: PointCloud2 provides width*height for organized clouds.
+        pts_info = "no-points"
+        if self.last_points_msg is not None:
+            msg = self.last_points_msg
+            # get the distance of the point in the center of the cloud to the robot
+            center_x = int(msg.width / 2)
+            center_y = int(msg.height / 2)
+            point_step = msg.point_step
+            row_step = msg.row_step
+            offset = center_y * row_step + center_x * point_step
+            # assuming the point cloud has x,y,z as first three fields in float32
+            x = np.frombuffer(msg.data, dtype=np.float32, count=1, offset=offset)[0]
+            y = np.frombuffer(msg.data, dtype=np.float32, count=1, offset=offset + 4)[0]
+            z = np.frombuffer(msg.data, dtype=np.float32, count=1, offset=offset + 8)[0]
+            distance = np.sqrt(x**2 + y**2 + z**2)
+            pts_info = f"center-dist={distance:.2f}m"
+            if distance < 0.3:
+                out.linear.z = 1.0  
+            if distance > 0.35:
+                out.linear.z = -1.0
+
+        print("Driving with linear.x = %5.2f, linear.z = %5.2f (points: %s)" % (out.linear.x, out.linear.z, pts_info))
         return out
+
+    def points_callback(self, msg: PointCloud2):
+        """Simple callback to store the last received PointCloud2 message.
+
+        Keep the raw message so callers can parse it when needed. We intentionally avoid
+        expensive conversion here; do that lazily in decision code if required.
+        """
+        self.last_points_msg = msg
 
 
 def main(args=None):
