@@ -9,7 +9,7 @@ import keras
 # is a nice visualization tool embedded within TensorFlow.
 # Please note that some errors have been intentionaly made inside this code. They can be found in the layers connections or layer size.
 
-def create_cnn_model(width,height,channel,classes, mean, std, drop):
+def create_cnn_model(width,height,channel,classes, mean, std, drop, regression=False):
     return keras.Sequential([
         tfkl.Input(shape=(height,width,channel)),
         tfkl.Normalization(axis=-1,mean=mean,variance=std**2, name='g_norm'),
@@ -21,7 +21,7 @@ def create_cnn_model(width,height,channel,classes, mean, std, drop):
         tfkl.Flatten(),
         tfkl.Dense(100, name='dense'),
         tfkl.Dropout(drop, name='dropout'),
-        tfkl.Dense(classes, activation=keras.activations.sigmoid, name='raw_output'),
+        tfkl.Dense(classes, activation=keras.activations.sigmoid if not regression else keras.activations.linear, name='raw_output'),
     ])
 
 
