@@ -52,6 +52,7 @@ class JoystickTeleop(Node):
                 self.timeout = False
                 self.get_logger().info("Accepting joystick commands")
             twist.linear.x = self.joy_value.axes[self.axis_linear_x] * self.scale_linear_x
+            #twist.linear.x = 0.2 * self.scale_linear_x
             twist.linear.y = self.joy_value.axes[self.axis_linear_y] * self.scale_linear_y
             twist.angular.z = self.joy_value.axes[self.axis_angular] * self.scale_angular
             if twist.linear.x < 0:

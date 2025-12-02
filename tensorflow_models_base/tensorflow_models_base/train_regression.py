@@ -7,7 +7,7 @@ import os
 
 from tensorflow_models_base.parser import ParseArgs
 from tensorflow_models_base.sampler import UniformSampler
-from tensorflow_models_base.reader import PNGReader
+from tensorflow_models_base.reader_regression import PNGReader
 from tensorflow_models_base.model import create_cnn_model
 
 class Train:

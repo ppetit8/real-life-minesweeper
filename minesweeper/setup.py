@@ -25,6 +25,7 @@ setup(
             'console_scripts': [
                     'metalDetector = minesweeper.metalDetector:main',
                     'shore_follower_drive_node = shore_follower_drive_base.shore_follower_drive:main',
+                    'shore_follower_drive_reg = shore_follower_drive_base_reg.shore_follower_drive_reg:main',
             ],
     },
 )

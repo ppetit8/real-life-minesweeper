@@ -44,20 +44,20 @@ import launch_ros.descriptions
 def generate_launch_description():
     return LaunchDescription([
         launch_ros.actions.Node(
-            package='shore_follower_regression', executable='shore_follower_regression', name='shore_follower_regression',
+            package='minesweeper', executable='shore_follower_drive_reg', name='shore_follower_drive_reg',
             parameters=[
-                {'~/base_frame': 'VSV/Vision_sensor'},
-                {'~/world_frame': 'world'},
-                {'~/out_dir': "/home/GTL/fjourda/ml4r/ws6_data_reg"},
-                {'~/min_displacement': 0.4},
-                {'~/min_rotation': 0.1},
-                {'~/max_image_per_type': 5000},
-                {'~/joystick_button': 11},
+                {'~/model_dir': os.path.join(os.getenv("HOME"),"ml4r/ws6_data_reg/output2/models/step_1000.keras")},
+                {'~/linear_vel': 0.1},
                 ],
             remappings=[
-                ('~/joy', '/joy'),
                 ('~/image', '/vrep/vision/image'),
                 ('~/twist', '/vsv_driver/twistCommand'),
                 ],
             output='screen'),
+
+        IncludeLaunchDescription(
+              PythonLaunchDescriptionSource([get_package_share_directory('vrep_ros_teleop') ,
+                        '/teleop_mux.launch.py'])
+              )
+
     ])

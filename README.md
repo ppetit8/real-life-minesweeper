@@ -26,11 +26,15 @@ source install/setup.bash && ros2 launch vrep_vsv_driver vsv_pc_min.launch.py
 
 source install/setup.bash && ros2 run minesweeper metalDetector
 
-## objective 2
+## objective 2 and 3
 
 ### creer un dataset
 
-### entrainer un model :
+source install/setup.bash && ros2 launch shore_follower_observe record.launch.py
+
+source install/setup.bash && ros2 launch shore_follower_regression record.launch.py
+
+### entrainer un model (ex objective 2):
 
 ssh -L 6006:localhost:6006 fjourda@balrog
 
@@ -44,13 +48,13 @@ source install/setup.bash
 
 cd  tensorflow_models_base/tensorflow_models_base/
 
-../scripts/train.sh 
+../scripts/train_regresion.sh 
 
 (hyperparameter tuning in this last script)
 
 vizualize curves with :
 
-tensorboard --logdir /home/GTL/fjourda/ml4r/ws6_data/output2
+tensorboard --logdir /home/GTL/fjourda/ml4r/ws6_data_reg/output2
 
 ### tester :  
 
@@ -59,3 +63,5 @@ don't forget to load the proper env for this part (build cv_bridge and launch th
 source /cs-share/pradalier/venv/tf-cpu-ros2/bin/activate
 
 source install/setup.bash && ros2 launch minesweeper start.launch.py
+
+source install/setup.bash && ros2 launch minesweeper start_reg.launch.py
