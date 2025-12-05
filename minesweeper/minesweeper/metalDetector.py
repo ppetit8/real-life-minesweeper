@@ -31,8 +31,7 @@ class MinimalPublisher(Node):
         )
 
         # clustering state (persistent markers — no expiry)
-        self._cluster_distance_threshold = 2.0  # meters
-        self._max_detection_distance = 2.0  # meters (mapping from strength -> distance)
+        self._cluster_distance_threshold = 4.0  # meters
         self._clusters = {}  # id -> {centroid: (x,y,z), n: int, sum: [sx,sy,sz]}
         self._next_cluster_id = 1
 
@@ -54,13 +53,12 @@ class MinimalPublisher(Node):
             self.get_logger().warn(f'Could not resolve TF for {self._source_frame}; using origin as fallback. Joints={positions}')
             xyz, frame_used = (0.0, 0.0, 0.0), self.world_frame
 
-        if msg.data > 0.9:  # arbitrary threshold
+        if msg.data > 0.2:  # arbitrary threshold
             # Interpret msg.data as strength in [0..1] where higher = closer.
             # Map strength -> estimated distance (meters). We assume a simple inverse mapping:
             # distance = max_distance * (1 - strength). This is an assumption and can be tuned.
             strength = float(msg.data)
-            strength = max(0.0, min(1.0, strength))
-            est_distance = self._max_detection_distance * (1.0 - strength)
+            est_distance = (1.0 - strength)
 
             # Try to get full transform including rotation so we can project along the sensor's forward axis.
             try:
@@ -79,14 +77,20 @@ class MinimalPublisher(Node):
                 self.get_logger().warn('TF lookup for rotation failed; using translation-only position for detection point.')
                 detect_x, detect_y, detect_z = float(xyz[0]), float(xyz[1]), 0.0
 
-            # Add detection to clustering (persistent clusters)
-            cluster_id = self._add_detection((detect_x, detect_y, detect_z))
+            # Add detection to clustering (persistent clusters), pass precision as estimated distance
+            cluster_id = self._add_detection((detect_x, detect_y, detect_z), precision=est_distance)
 
             # Build MarkerArray with one center-sphere per cluster (no labels)
             marker_array = MarkerArray()
             now_msg = self.get_clock().now().to_msg()
             for cid, c in self._clusters.items():
-                mx, my, mz = c['centroid']
+                # Use marker_center (best-known location) for display; fall back to centroid
+                mx, my, mz = c.get('marker_center', c['centroid'])
+                # marker_precision is an estimated radius that should contain the detected point.
+                # We'll scale the sphere to 2x precision (diameter) to increase visual safety.
+                precision = c.get('marker_precision', 0.2)
+                diameter = max(0.5, precision * 4.0)
+
                 m = Marker()
                 m.header.frame_id = self.world_frame
                 m.header.stamp = now_msg
@@ -98,10 +102,10 @@ class MinimalPublisher(Node):
                 m.pose.position.y = float(my)
                 m.pose.position.z = float(mz)
                 m.pose.orientation.w = 1.0
-                m.scale.x = 0.2
-                m.scale.y = 0.2
-                m.scale.z = 0.2
-                m.color.a = 1.0
+                m.scale.x = diameter
+                m.scale.y = diameter
+                m.scale.z = diameter
+                m.color.a = 0.6
                 m.color.r = 1.0
                 m.color.g = 0.84
                 m.color.b = 0.0
@@ -127,8 +131,12 @@ class MinimalPublisher(Node):
             return (1.0, 0.0, 0.0)
         return (vpx / norm, vpy / norm, vpz / norm)
 
-    def _add_detection(self, p):
-        """Add a detection point p=(x,y,z) to nearest cluster or create a new one.
+    def _add_detection(self, p, precision: float = 0.5):
+        """Add a detection point p=(x,y,z) with an estimated precision (radius in meters) to nearest cluster or create a new one.
+
+        If the detection is assigned to an existing cluster, update centroid as before.
+        Also maintain per-cluster 'marker_center' and 'marker_precision' where marker_center is only updated when
+        the new detection has a better (smaller) precision than the stored marker_precision.
 
         Returns the cluster id.
         """
@@ -152,15 +160,26 @@ class MinimalPublisher(Node):
             c['sum'][2] += pz
             c['n'] = n + 1
             c['centroid'] = (c['sum'][0] / c['n'], c['sum'][1] / c['n'], c['sum'][2] / c['n'])
+
+            # Update marker precision/center only if the new detection has better precision (smaller radius)
+            existing_prec = c.get('marker_precision')
+            # Update when new precision is better (smaller) or equal — treat equal as an update to keep previous behavior
+            if existing_prec is None or precision <= existing_prec:
+                c['marker_precision'] = precision
+                c['marker_center'] = (px, py, pz)
+
             return best_id
         else:
             # create new cluster
             cid = self._next_cluster_id
             self._next_cluster_id += 1
+            # Initialize cluster with marker_precision == precision and marker_center == detection
             self._clusters[cid] = {
                 'centroid': (px, py, pz),
                 'n': 1,
                 'sum': [px, py, pz],
+                'marker_center': (px, py, pz),
+                'marker_precision': float(precision),
             }
             return cid
 

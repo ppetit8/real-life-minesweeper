@@ -20,6 +20,8 @@ import cv2
 # cv_bridge2 is a local version of cv_bridge compiled with numpy 2
 from cv_bridge2 import CvBridge, CvBridgeError
 
+import struct
+from sensor_msgs_py import point_cloud2  # ROS2 built-in parser
 
 class ShoreFollowerDrive(Node):
     def __init__(self):
@@ -51,6 +53,37 @@ class ShoreFollowerDrive(Node):
         processed_ = np.expand_dims(cv2.resize(raw, (0,0), fx = 32.0/data.height, fy=32.0/data.width, interpolation=cv2.INTER_AREA), axis=0)
         self.twist_pub_.publish(self.image_to_rot(processed_))
 
+
+    def get_ground_stats(self):
+        """
+        Returns (min_z, max_z) extracted from the last pointcloud.
+        Returns None if no valid pointcloud received yet.
+        """
+        if self.last_points_msg is None:
+            return None
+
+        # point_cloud2.read_points returns a generator over the points
+        points = point_cloud2.read_points(
+            self.last_points_msg,
+            field_names=("x", "y", "z"),
+            skip_nans=True
+        )
+
+        min_z = float('inf')
+        max_z = -float('inf')
+
+        for (_, _, z) in points:
+            if z < min_z:
+                min_z = z
+            if z > max_z:
+                max_z = z
+
+        if min_z == float('inf'):
+            return None  # no points
+
+        return (min_z, max_z)
+
+
     def image_to_rot(self, img):
         # Reads the image, feed it to the network, get the predictions and act on it.
         out = Twist()
@@ -66,29 +99,25 @@ class ShoreFollowerDrive(Node):
         elif res[2] > res[1] and res[2] > res[0]:
             out.linear.x = self.linear_vel_
         
-        # get the last received point cloud (if any) and derive a simple metric
-        # We keep this lightweight: PointCloud2 provides width*height for organized clouds.
-        pts_info = "no-points"
-        if self.last_points_msg is not None:
-            msg = self.last_points_msg
-            # get the distance of the point in the center of the cloud to the robot
-            center_x = int(msg.width / 2)
-            center_y = int(msg.height / 2)
-            point_step = msg.point_step
-            row_step = msg.row_step
-            offset = center_y * row_step + center_x * point_step
-            # assuming the point cloud has x,y,z as first three fields in float32
-            x = np.frombuffer(msg.data, dtype=np.float32, count=1, offset=offset)[0]
-            y = np.frombuffer(msg.data, dtype=np.float32, count=1, offset=offset + 4)[0]
-            z = np.frombuffer(msg.data, dtype=np.float32, count=1, offset=offset + 8)[0]
-            distance = np.sqrt(x**2 + y**2 + z**2)
-            pts_info = f"center-dist={distance:.2f}m"
-            if distance < 0.3:
-                out.linear.z = 1.0  
-            if distance > 0.35:
-                out.linear.z = -1.0
+        stats = self.get_ground_stats()
+        if stats is not None:
+            min_z, max_z = stats
 
-        print("Driving with linear.x = %5.2f, linear.z = %5.2f (points: %s)" % (out.linear.x, out.linear.z, pts_info))
+            # Example strategy:
+            # If ground is too close (min_z < threshold), go up
+            # If ground is far (max_z > threshold), go down
+
+            ground_close_threshold = 0.3
+            ground_far_threshold = 0.4
+
+            if min_z < ground_close_threshold:
+                out.linear.z = 0.3   # go up
+            elif max_z > ground_far_threshold:
+                out.linear.z = -0.3   # go down
+            else:
+                out.linear.z = 0.0
+            print("min_z: %5.2f, max_z: %5.2f" % (min_z, max_z))
+        print("Driving with linear.x = %5.2f, linear.z = %5.2f" % (out.linear.x, out.linear.z))
         return out
 
     def points_callback(self, msg: PointCloud2):

@@ -30,9 +30,9 @@ source install/setup.bash && ros2 run minesweeper metalDetector
 
 ### creer un dataset
 
-source install/setup.bash && ros2 launch shore_follower_observe record.launch.py
+2 - source install/setup.bash && ros2 launch shore_follower_observe record.launch.py
 
-source install/setup.bash && ros2 launch shore_follower_regression record.launch.py
+3 - source install/setup.bash && ros2 launch shore_follower_regression record.launch.py
 
 ### entrainer un model (ex objective 2):
 
@@ -48,7 +48,7 @@ source install/setup.bash
 
 cd  tensorflow_models_base/tensorflow_models_base/
 
-../scripts/train_regresion.sh 
+../scripts/train_regression.sh 
 
 (hyperparameter tuning in this last script)
 
@@ -62,6 +62,6 @@ don't forget to load the proper env for this part (build cv_bridge and launch th
 
 source /cs-share/pradalier/venv/tf-cpu-ros2/bin/activate
 
-source install/setup.bash && ros2 launch minesweeper start.launch.py
+2 - source install/setup.bash && ros2 launch minesweeper start.launch.py
 
-source install/setup.bash && ros2 launch minesweeper start_reg.launch.py
+3 - source install/setup.bash && ros2 launch minesweeper start_reg.launch.py
